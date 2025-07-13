@@ -100,11 +100,13 @@ app.get("/stats/month", (req, res) => {
 
 // ================== Telegram bot + Server ==================
 
-bot.launch().then(() => {
-  console.log("🤖 Telegram-бот запущен");
-  app.listen(PORT, () => {
-    console.log(`🚀 Сервер запущен на http://localhost:${PORT}`);
-  });
-}).catch((err) => {
-  console.error("❌ Ошибка запуска Telegram-бота:", err);
+// Установка webhook перед запуском сервера
+app.use(bot.webhookCallback("/bot")); // маршрутизатор бота
+bot.telegram.setWebhook(`https://tg-expense-backend.onrender.com/bot`)
+  .then(() => console.log("📡 Webhook установлен"))
+  .catch((err) => console.error("❌ Ошибка webhook:", err));
+
+// Запуск сервера
+app.listen(PORT, () => {
+  console.log(`🚀 Сервер запущен на http://localhost:${PORT}`);
 });
