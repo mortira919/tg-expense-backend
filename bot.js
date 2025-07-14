@@ -11,7 +11,7 @@ bot.start((ctx) => {
           {
             text: "Открыть",
             web_app: {
-              url: "https://твой-фронт.vercel.app" // 👈 сюда фронт
+              url: "https://tg-project-kappa.vercel.app/" // 👈 сюда фронт
             }
           }
         ]
