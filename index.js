@@ -17,18 +17,18 @@ app.get("/", (req, res) => {
 
 // ===== API =====
 app.post("/expenses", (req, res) => {
-  const { amount, category, comment = "", telegram_id } = req.body;
+  let { amount, category, comment = "", telegram_id } = req.body;
 
   console.log("📥 POST /expenses", req.body);
 
+  amount = Number(amount);
+  telegram_id = String(telegram_id);
+
   // ✅ Улучшенная валидация
-  if (
-    typeof amount !== "number" ||
-    isNaN(amount) ||
-    !category ||
-    !telegram_id
-  ) {
-    return res.status(400).json({ error: "Некорректные данные: amount, category и telegram_id обязательны" });
+  if (isNaN(amount) || !category || !telegram_id) {
+    return res.status(400).json({
+      error: "Некорректные данные: amount (number), category и telegram_id обязательны",
+    });
   }
 
   try {
@@ -36,7 +36,7 @@ app.post("/expenses", (req, res) => {
       INSERT INTO expenses (amount, category, comment, date, telegram_id)
       VALUES (?, ?, ?, datetime('now'), ?)
     `);
-    const info = stmt.run(amount, category, comment, String(telegram_id));
+    const info = stmt.run(amount, category, comment, telegram_id);
     res.json({ id: info.lastInsertRowid });
   } catch (error) {
     console.error("❌ Ошибка при добавлении расхода:", error);
@@ -46,7 +46,8 @@ app.post("/expenses", (req, res) => {
 
 app.get("/expenses", (req, res) => {
   const { telegram_id } = req.query;
-  if (!telegram_id) return res.status(400).json({ error: "telegram_id обязателен" });
+  if (!telegram_id)
+    return res.status(400).json({ error: "telegram_id обязателен" });
 
   const stmt = db.prepare("SELECT * FROM expenses WHERE telegram_id = ? ORDER BY date DESC");
   const expenses = stmt.all(String(telegram_id));
@@ -58,8 +59,9 @@ app.put("/expenses/:id", (req, res) => {
   const id = req.params.id;
 
   const stmt = db.prepare(`UPDATE expenses SET amount = ?, category = ?, comment = ? WHERE id = ?`);
-  const info = stmt.run(amount, category, comment, id);
-  if (info.changes === 0) return res.status(404).json({ error: "Расход не найден" });
+  const info = stmt.run(Number(amount), category, comment, id);
+  if (info.changes === 0)
+    return res.status(404).json({ error: "Расход не найден" });
 
   res.json({ success: true });
 });
