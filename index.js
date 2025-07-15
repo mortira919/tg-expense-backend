@@ -21,13 +21,14 @@ app.post("/expenses", (req, res) => {
 
   console.log("📥 POST /expenses", req.body);
 
-  // Проверка входящих данных
+  // ✅ Улучшенная валидация
   if (
-    amount === undefined ||
-    category === undefined ||
-    telegram_id === undefined
+    typeof amount !== "number" ||
+    isNaN(amount) ||
+    !category ||
+    !telegram_id
   ) {
-    return res.status(400).json({ error: "amount, category и telegram_id обязательны" });
+    return res.status(400).json({ error: "Некорректные данные: amount, category и telegram_id обязательны" });
   }
 
   try {
@@ -35,7 +36,7 @@ app.post("/expenses", (req, res) => {
       INSERT INTO expenses (amount, category, comment, date, telegram_id)
       VALUES (?, ?, ?, datetime('now'), ?)
     `);
-    const info = stmt.run(amount, category, comment, telegram_id);
+    const info = stmt.run(amount, category, comment, String(telegram_id));
     res.json({ id: info.lastInsertRowid });
   } catch (error) {
     console.error("❌ Ошибка при добавлении расхода:", error);
@@ -48,7 +49,7 @@ app.get("/expenses", (req, res) => {
   if (!telegram_id) return res.status(400).json({ error: "telegram_id обязателен" });
 
   const stmt = db.prepare("SELECT * FROM expenses WHERE telegram_id = ? ORDER BY date DESC");
-  const expenses = stmt.all(telegram_id);
+  const expenses = stmt.all(String(telegram_id));
   res.json(expenses);
 });
 
@@ -76,7 +77,7 @@ app.get("/stats/days", (req, res) => {
     FROM expenses WHERE telegram_id = ?
     GROUP BY day ORDER BY day DESC LIMIT 30
   `);
-  res.json(stmt.all(telegram_id));
+  res.json(stmt.all(String(telegram_id)));
 });
 
 app.get("/stats/week", (req, res) => {
@@ -85,7 +86,7 @@ app.get("/stats/week", (req, res) => {
     SELECT SUM(amount) as total
     FROM expenses WHERE date >= datetime('now', '-7 days') AND telegram_id = ?
   `);
-  res.json(stmt.get(telegram_id));
+  res.json(stmt.get(String(telegram_id)));
 });
 
 app.get("/stats/month", (req, res) => {
@@ -94,7 +95,7 @@ app.get("/stats/month", (req, res) => {
     SELECT SUM(amount) as total
     FROM expenses WHERE date >= datetime('now', '-30 days') AND telegram_id = ?
   `);
-  res.json(stmt.get(telegram_id));
+  res.json(stmt.get(String(telegram_id)));
 });
 
 // ===== DEBUG Webhook Log =====
